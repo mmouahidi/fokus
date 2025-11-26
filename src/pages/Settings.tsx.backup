@@ -1,0 +1,291 @@
+import { useState } from 'react'
+import { Settings as SettingsIcon, Trash2, Download, Upload, RotateCcw, Sparkles, Bell, Palette, Zap, FileText, X, CheckCircle, AlertCircle } from 'lucide-react'
+import { useStore } from '@/lib/store'
+import { autoImport, importFromPlainText, importFromCSV, importFromJSON, importFromMarkdown, type ImportResult } from '@/lib/importers'
+
+export default function Settings() {
+    const { settings, updateSettings, items, clearAllItems, stats, addItem } = useStore()
+    const [showClearConfirm, setShowClearConfirm] = useState(false)
+    const [apiKey, setApiKey] = useState('')
+    const [showImportModal, setShowImportModal] = useState(false)
+    const [importText, setImportText] = useState('')
+    const [importFormat, setImportFormat] = useState<'auto' | 'plain' | 'csv' | 'json' | 'markdown'>('auto')
+    const [importResult, setImportResult] = useState<ImportResult | null>(null)
+
+    const handleExportData = () => {
+        const data = {
+            items,
+            stats,
+            settings,
+            exportedAt: new Date().toISOString()
+        }
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `fokus-backup-${Date.now()}.json`
+        a.click()
+        URL.revokeObjectURL(url)
+    }
+
+    const handleImportData = () => {
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.accept = '.json'
+        input.onchange = async (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0]
+            if (!file) return
+
+            try {
+                const text = await file.text()
+                const data = JSON.parse(text)
+                // In a real app, you'd validate and restore this data
+                console.log('Import data:', data)
+                alert('Import functionality coming soon!')
+            } catch (error) {
+                alert('Failed to import data. Invalid file format.')
+            }
+        }
+        input.click()
+    }
+
+    const handleClearAll = () => {
+        if (showClearConfirm) {
+            clearAllItems()
+            setShowClearConfirm(false)
+        } else {
+            setShowClearConfirm(true)
+            setTimeout(() => setShowClearConfirm(false), 3000)
+        }
+    }
+
+    const handleSaveApiKey = () => {
+        if (apiKey.trim()) {
+            // In a real app, you'd save this securely
+            localStorage.setItem('VITE_OPENAI_API_KEY', apiKey)
+            alert('API Key saved! Reload the app to use Real AI.')
+            setApiKey('')
+        }
+    }
+
+    const handleImportTasks = () => {
+        setShowImportModal(true)
+        setImportText('')
+        setImportResult(null)
+    }
+
+    const handlePreviewImport = () => {
+        if (!importText.trim()) return
+
+        let result: ImportResult
+        switch (importFormat) {
+            case 'plain':
+                result = importFromPlainText(importText)
+                break
+            case 'csv':
+                result = importFromCSV(importText)
+                break
+            case 'json':
+                result = importFromJSON(importText)
+                break
+            case 'markdown':
+                result = importFromMarkdown(importText)
+                break
+            default:
+                result = autoImport(importText)
+        }
+
+        setImportResult(result)
+    }
+
+    const handleConfirmImport = () => {
+        if (!importResult || !importResult.success) return
+
+        importResult.items.forEach(item => addItem(item))
+        setShowImportModal(false)
+        setImportText('')
+        setImportResult(null)
+        alert(`Successfully imported ${importResult.items.length} tasks!`)
+    }
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white p-6 pb-24">
+            <div className="max-w-2xl mx-auto">
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-8">
+                    <div className="p-3 bg-primary-500/20 rounded-xl">
+                        <SettingsIcon className="w-8 h-8 text-primary-400" />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-bold">Settings</h1>
+                        <p className="text-gray-400">Customize your FOKUS experience</p>
+                    </div>
+                </div>
+
+                {/* AI Settings Section */}
+                <section className="mb-8">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Sparkles className="w-5 h-5 text-purple-400" />
+                        <h2 className="text-xl font-semibold">AI Configuration</h2>
+                    </div>
+
+                    <div className="bg-gray-800/50 rounded-xl p-6 space-y-4 border border-white/5">
+                        {/* AI Mode Toggle */}
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="font-medium">AI Mode</p>
+                                <p className="text-sm text-gray-400">Use real AI or mock categorization</p>
+                            </div>
+                            <button
+                                onClick={() => updateSettings({ aiMode: settings.aiMode === 'real' ? 'mock' : 'real' })}
+                                className={`relative w-16 h-8 rounded-full transition-colors ${settings.aiMode === 'real' ? 'bg-primary-500' : 'bg-gray-600'
+                                    }`}
+                            >
+                                <div
+                                    className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform ${settings.aiMode === 'real' ? 'translate-x-8' : 'translate-x-0'
+                                        }`}
+                                />
+                            </button>
+                        </div>
+
+                        {/* Model Selection */}
+                        <div>
+                            <p className="font-medium mb-2">Model</p>
+                            <select
+                                value={settings.aiModel}
+                                onChange={(e) => updateSettings({ aiModel: e.target.value as 'gpt-4o' | 'gpt-4o-mini' })}
+                                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                disabled={settings.aiMode === 'mock'}
+                            >
+                                <option value="gpt-4o">GPT-4o (More Accurate)</option>
+                                <option value="gpt-4o-mini">GPT-4o Mini (Faster, Cheaper)</option>
+                            </select>
+                        </div>
+
+                        {/* API Key Input */}
+                        {settings.aiMode === 'real' && (
+                            <div>
+                                <p className="font-medium mb-2">OpenAI API Key</p>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="password"
+                                        value={apiKey}
+                                        onChange={(e) => setApiKey(e.target.value)}
+                                        placeholder="sk-..."
+                                        className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    />
+                                    <button
+                                        onClick={handleSaveApiKey}
+                                        className="px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors"
+                                    >
+                                        Save
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">Stored locally in your browser</p>
+                            </div>
+                        )}
+                    </div>
+                </section>
+
+                {/* Notifications Section */}
+                <section className="mb-8">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Bell className="w-5 h-5 text-blue-400" />
+                        <h2 className="text-xl font-semibold">Notifications</h2>
+                    </div>
+
+                    <div className="bg-gray-800/50 rounded-xl p-6 space-y-4 border border-white/5">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="font-medium">Sound Effects</p>
+                                <p className="text-sm text-gray-400">Play sounds on actions</p>
+                            </div>
+                            <button
+                                onClick={() => updateSettings({ soundEnabled: !settings.soundEnabled })}
+                                className={`relative w-16 h-8 rounded-full transition-colors ${settings.soundEnabled ? 'bg-primary-500' : 'bg-gray-600'
+                                    }`}
+                            >
+                                <div
+                                    className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform ${settings.soundEnabled ? 'translate-x-8' : 'translate-x-0'
+                                        }`}
+                                />
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Theme Section */}
+                <section className="mb-8">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Palette className="w-5 h-5 text-pink-400" />
+                        <h2 className="text-xl font-semibold">Theme</h2>
+                    </div>
+
+                    <div className="bg-gray-800/50 rounded-xl p-6 space-y-4 border border-white/5">
+                        <div>
+                            <p className="font-medium mb-2">Animation Speed</p>
+                            <select
+                                value={settings.animationSpeed}
+                                onChange={(e) => updateSettings({ animationSpeed: e.target.value as 'slow' | 'normal' | 'fast' })}
+                                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            >
+                                <option value="slow">Slow</option>
+                                <option value="normal">Normal</option>
+                                <option value="fast">Fast</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Statistics Section */}
+                <section className="mb-8">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Zap className="w-5 h-5 text-yellow-400" />
+                        <h2 className="text-xl font-semibold">Your Stats</h2>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-primary-500/20 to-purple-500/20 rounded-xl p-6 border border-primary-500/30">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="text-center">
+                                <div className="text-3xl font-bold text-primary-400">{stats.itemsCompleted}</div>
+                                <div className="text-sm text-gray-400">Items Completed</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-3xl font-bold text-orange-400">{stats.streak}</div>
+                                <div className="text-sm text-gray-400">Day Streak 🔥</div>
+                            </div>
+                        </div>
+                        <div className="mt-4 text-center">
+                            <p className="text-xs text-gray-500">
+                                Last active: {stats.lastActive ? new Date(stats.lastActive).toLocaleDateString() : 'Never'}
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Data Management Section */}
+                <section className="mb-8">
+                    <div className="flex items-center gap-2 mb-4">
+                        <RotateCcw className="w-5 h-5 text-green-400" />
+                        <h2 className="text-xl font-semibold">Data Management</h2>
+                    </div>
+
+                    <div className="bg-gray-800/50 rounded-xl p-6 space-y-3 border border-white/5">
+                        <button
+                            onClick={handleExportData}
+                            className="w-full flex items-center justify-between px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                        >
+                            <span className="flex items-center gap-2">
+                                <Download className="w-4 h-4" />
+                                Export Data
+                            </span>
+                            <span className="text-xs text-gray-400">{items.length} items</span>
+                        </button>
+
+                        <button
+                            onClick={handleImportData}
+                            className="w-full flex items-center gap-2 px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                        >
+                    </div>
+                    )
+}

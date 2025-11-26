@@ -1,0 +1,40 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark Background -->
+  <rect width="512" height="512" fill="#0a0a0a" rx="110"/>
+  
+  <!-- Gradient Background Circle -->
+  <circle cx="256" cy="256" r="200" fill="url(#gradient1)" opacity="0.3"/>
+  
+  <!-- Main Brain Icon -->
+  <g transform="translate(256, 256)">
+    <!-- Brain Outline -->
+    <path d="M-60,-80 Q-80,-60 -80,-30 Q-80,0 -60,20 Q-40,40 0,50 Q40,40 60,20 Q80,0 80,-30 Q80,-60 60,-80 Q40,-100 0,-100 Q-40,-100 -60,-80 Z" 
+          fill="none" stroke="url(#gradient2)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Brain Details -->
+    <path d="M-30,-60 Q-20,-40 -10,-50 Q0,-60 10,-50 Q20,-40 30,-60" 
+          fill="none" stroke="url(#gradient2)" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+    <path d="M-40,-20 Q-30,0 -20,-10 Q-10,-20 0,-10 Q10,0 20,-10 Q30,-20 40,-20" 
+          fill="none" stroke="url(#gradient2)" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+    <path d="M-50,10 Q-40,30 -25,25 Q-10,20 0,30 Q10,20 25,25 Q40,30 50,10" 
+          fill="none" stroke="url(#gradient2)" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+    
+    <!-- Focus Dot -->
+    <circle cx="0" cy="-20" r="12" fill="#0ea5e9"/>
+    <circle cx="0" cy="-20" r="8" fill="#a855f7"/>
+    <circle cx="0" cy="-20" r="4" fill="white"/>
+  </g>
+  
+  <!-- Gradient Definitions -->
+  <defs>
+    <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a855f7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0ea5e9;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a855f7;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#c084fc;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0ea5e9;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+</svg>
