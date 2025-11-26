@@ -48,7 +48,36 @@ export default defineConfig({
             text: 'text',
             url: 'url'
           }
-        }
+        },
+        screenshots: [
+          {
+            src: 'screenshots/home.png',
+            sizes: '1280x720',
+            type: 'image/png',
+            form_factor: 'wide',
+            label: 'Home Screen'
+          },
+          {
+            src: 'screenshots/board.png',
+            sizes: '1280x720',
+            type: 'image/png',
+            form_factor: 'wide',
+            label: 'Kanban Board'
+          },
+          {
+            src: 'screenshots/analytics.png',
+            sizes: '1280x720',
+            type: 'image/png',
+            form_factor: 'wide',
+            label: 'Analytics Dashboard'
+          },
+          {
+            src: 'screenshots/home.png',
+            sizes: '1280x720',
+            type: 'image/png',
+            label: 'Home Screen'
+          }
+        ]
       }
     })
   ],
