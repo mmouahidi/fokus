@@ -5,6 +5,7 @@ import Review from './pages/Review'
 import Kanban from './pages/Kanban'
 import Analytics from './pages/Analytics'
 import Settings from './pages/Settings'
+import Capture from './pages/Capture'
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="/board" element={<Kanban />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/capture" element={<Capture />} />
         </Route>
       </Routes>
     </Router>

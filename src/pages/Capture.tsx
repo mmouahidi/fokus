@@ -4,14 +4,14 @@ import { ArrowLeft, ExternalLink, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import CaptureInput from '@/components/CaptureInput'
 import { useUrlMetadata } from '@/hooks/useUrlMetadata'
-import { useLocalStorage } from '@/hooks/useLocalStorage'
+import { useStore } from '@/lib/store'
 
 export default function Capture() {
     const [searchParams] = useSearchParams()
     const navigate = useNavigate()
     const [initialValue, setInitialValue] = useState('')
     const [detectedUrl, setDetectedUrl] = useState<string | null>(null)
-    const [, setRecentCaptures] = useLocalStorage<string[]>('fokus-recent-captures', [])
+    const addCapture = useStore((state) => state.addCapture)
     const { metadata, loading } = useUrlMetadata(detectedUrl)
 
     useEffect(() => {
@@ -33,10 +33,8 @@ export default function Capture() {
     }, [searchParams])
 
     const handleCapture = (value: string) => {
-        console.log('Captured from share:', value)
-
-        // Save to localStorage
-        setRecentCaptures(prev => [value, ...prev].slice(0, 10))
+        // Add to the main store for processing
+        addCapture(value)
 
         // Navigate back to home
         navigate('/')
