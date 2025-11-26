@@ -1,7 +1,7 @@
 import { useStore } from '@/lib/store'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, CartesianGrid } from 'recharts'
 import { motion } from 'framer-motion'
-import { Activity, CheckCircle, Flame, Tag, TrendingUp, Download } from 'lucide-react'
+import { CheckCircle, Flame, Tag, TrendingUp, Download } from 'lucide-react'
 
 export default function Analytics() {
     const { items, captures, stats, getAllTags, exportData } = useStore()

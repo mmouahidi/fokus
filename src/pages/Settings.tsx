@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Settings as SettingsIcon, Trash2, Download, Upload, RotateCcw, Sparkles, Bell, Palette, Zap, FileText, X, CheckCircle, AlertCircle } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { autoImport, importFromPlainText, importFromCSV, importFromJSON, importFromMarkdown, type ImportResult } from '@/lib/importers'
+import { notificationService } from '@/lib/notifications'
 
 export default function Settings() {
     const {
@@ -9,13 +10,8 @@ export default function Settings() {
         updateSettings,
         items,
         stats,
-        importData,
-        exportData,
         clearAllItems,
-        clearAllCaptures,
-        addItem,
-        addItems,
-        notificationService
+        addItems
     } = useStore()
     const [showClearConfirm, setShowClearConfirm] = useState(false)
     const [apiKey, setApiKey] = useState('')
