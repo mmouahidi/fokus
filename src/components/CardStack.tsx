@@ -1,5 +1,6 @@
 import { motion, useMotionValue, useTransform, useAnimation } from 'framer-motion'
-import { Clock, AlertTriangle } from 'lucide-react'
+import React from 'react'
+import { Clock, AlertTriangle, FileText } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 export interface CardItem {
@@ -17,6 +18,12 @@ export interface CardItem {
     kanbanColumn?: 'now' | 'soon' | 'later' | 'someday' // For Kanban board
     scheduledDate?: string // ISO 8601 format for Google Calendar integration
     scheduledDuration?: number // Duration in minutes
+
+    // Phase 1: Archive functionality
+    archived?: boolean
+    archivedAt?: number
+    completedAt?: number
+    notes?: string // Key takeaways and learnings
 }
 
 const getTypeColors = (type: CardItem['type']) => {
@@ -54,7 +61,8 @@ const getAgeDisplay = (timestamp?: number): string | null => {
     return 'just now'
 }
 
-function Card({ item, index, active, onSwipe }: { item: CardItem, index: number, active: boolean, onSwipe: (dir: 'left' | 'right' | 'up') => void }) {
+// Memoize Card component to prevent unnecessary re-renders
+const Card = React.memo(({ item, index, active, onSwipe }: { item: CardItem, index: number, active: boolean, onSwipe: (dir: 'left' | 'right' | 'up') => void }) => {
     const x = useMotionValue(0)
     const y = useMotionValue(0)
     const rotate = useTransform(x, [-200, 200], [-25, 25])
@@ -102,6 +110,17 @@ function Card({ item, index, active, onSwipe }: { item: CardItem, index: number,
         decayed: 'grayscale-[95%] contrast-[0.75] brightness-[0.85] border-red-900/70 bg-red-950/20'
     }
 
+    // Context-aware swipe text
+    const getSwipeActionText = (type: CardItem['type']) => {
+        switch (type) {
+            case 'task': return 'Complete'
+            case 'article': return 'Read'
+            case 'video': return 'Watch'
+            case 'idea': return 'Process'
+            default: return 'Execute'
+        }
+    }
+
     return (
         <motion.div
             style={{
@@ -129,7 +148,9 @@ function Card({ item, index, active, onSwipe }: { item: CardItem, index: number,
                     style={{ opacity: executeOpacity }}
                     className={`absolute top-8 left-8 z-10 border-4 ${typeColors.border} rounded-lg px-4 py-2 -rotate-12 bg-black/50 backdrop-blur-sm`}
                 >
-                    <span className="text-primary-400 font-bold text-2xl uppercase tracking-widest">Execute</span>
+                    <span className="text-primary-400 font-bold text-2xl uppercase tracking-widest">
+                        {getSwipeActionText(item.type)}
+                    </span>
                 </motion.div>
                 <motion.div
                     style={{ opacity: incinerateOpacity }}
@@ -141,9 +162,17 @@ function Card({ item, index, active, onSwipe }: { item: CardItem, index: number,
                 {/* Card Content */}
                 <div className={`h-full flex flex-col p-6 bg-gradient-to-b ${typeColors.bg} backdrop-blur-xl`}>
                     <div className="flex items-center justify-between mb-4">
-                        <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${typeColors.badge} uppercase tracking-wider`}>
-                            {item.type}
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${typeColors.badge} uppercase tracking-wider`}>
+                                {item.type}
+                            </span>
+                            <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${item.type === 'task'
+                                ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
+                                : 'border-blue-500/30 text-blue-400 bg-blue-500/10'
+                                }`}>
+                                {item.type === 'task' ? 'Action' : 'Reference'}
+                            </span>
+                        </div>
                         <div className="flex items-center gap-2">
                             {rotStatus !== 'fresh' && (
                                 <div className={`flex items-center text-xs ${rotStatus === 'decayed' ? 'text-red-500/90' :
@@ -159,6 +188,12 @@ function Card({ item, index, active, onSwipe }: { item: CardItem, index: number,
                                 <div className="flex items-center text-gray-400 text-xs">
                                     <Clock className="w-3 h-3 mr-1" />
                                     {item.timeEstimate}
+                                </div>
+                            )}
+                            {item.notes && (
+                                <div className="flex items-center text-primary-400 text-xs ml-2" title="Has notes">
+                                    <FileText className="w-3 h-3 mr-1" />
+                                    Notes
                                 </div>
                             )}
                         </div>
@@ -180,14 +215,17 @@ function Card({ item, index, active, onSwipe }: { item: CardItem, index: number,
             </div>
         </motion.div>
     )
-}
+})
 
 export default function CardStack({ items, onSwipe }: { items: CardItem[], onSwipe: (id: string, direction: 'left' | 'right' | 'up') => void }) {
     const navigate = useNavigate()
 
+    // Only render top 5 cards for performance (rest are behind and not visible anyway)
+    const visibleItems = items.slice(0, 5)
+
     return (
         <div className="relative w-full h-[60vh] min-h-[400px] flex items-center justify-center">
-            {items.map((item, index) => (
+            {visibleItems.map((item, index) => (
                 <Card
                     key={item.id}
                     item={item}
@@ -222,6 +260,15 @@ export default function CardStack({ items, onSwipe }: { items: CardItem[], onSwi
                         >
                             Capture New
                         </button>
+                    </div>
+
+                    <div className="mt-8 p-4 bg-white/5 rounded-xl max-w-xs backdrop-blur-sm border border-white/10">
+                        <h4 className="text-sm font-semibold text-primary-300 mb-2">💡 Did you know?</h4>
+                        <ul className="text-xs text-gray-400 space-y-1 text-left">
+                            <li>• Swipe <strong>Up</strong> to Archive without executing</li>
+                            <li>• Add <strong>Notes</strong> during execution to save insights</li>
+                            <li>• Go to <strong>Settings</strong> to Export to Obsidian/Notion</li>
+                        </ul>
                     </div>
                 </motion.div>
             )}

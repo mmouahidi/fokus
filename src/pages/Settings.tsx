@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Settings as SettingsIcon, Trash2, Download, Upload, RotateCcw, Sparkles, Bell, Palette, Zap, FileText, X, CheckCircle, AlertCircle } from 'lucide-react'
+import { Settings as SettingsIcon, Download, Sparkles, Bell, Palette, Zap, FileText, X, CheckCircle, AlertCircle } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { autoImport, importFromPlainText, importFromCSV, importFromJSON, importFromMarkdown, type ImportResult } from '@/lib/importers'
 import { notificationService } from '@/lib/notifications'
@@ -10,93 +10,21 @@ export default function Settings() {
         updateSettings,
         items,
         stats,
-        clearAllItems,
         addItems
     } = useStore()
-    const [showClearConfirm, setShowClearConfirm] = useState(false)
-    const [apiKey, setApiKey] = useState('')
+
     const [showImportModal, setShowImportModal] = useState(false)
     const [importText, setImportText] = useState('')
     const [importFormat, setImportFormat] = useState<'auto' | 'plain' | 'csv' | 'json' | 'markdown'>('auto')
     const [importResult, setImportResult] = useState<ImportResult | null>(null)
 
-    const handleExportData = () => {
-        const data = {
-            items,
-            stats,
-            settings,
-            exportedAt: new Date().toISOString()
-        }
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `fokus-backup-${Date.now()}.json`
-        a.click()
-        URL.revokeObjectURL(url)
-    }
 
-    const handleImportData = () => {
-        const input = document.createElement('input')
-        input.type = 'file'
-        input.accept = '.json'
-        input.onchange = async (e) => {
-            const file = (e.target as HTMLInputElement).files?.[0]
-            if (!file) return
 
-            try {
-                const text = await file.text()
-                const data = JSON.parse(text)
 
-                // Validate the imported data structure
-                if (!data.items && !data.captures) {
-                    alert('Invalid backup file format. Missing items or captures.')
-                    return
-                }
 
-                // Use the store's import function if available, otherwise manually set
-                const { items: currentItems, captures: currentCaptures } = useStore.getState()
 
-                // Merge or replace items (replace for now)
-                useStore.setState({
-                    items: data.items || currentItems,
-                    captures: data.captures || currentCaptures,
-                    settings: data.settings ? { ...settings, ...data.settings } : settings,
-                    stats: data.stats || stats
-                })
 
-                alert(`Successfully imported ${(data.items || []).length} items and ${(data.captures || []).length} captures!`)
-            } catch (error) {
-                console.error('Import error:', error)
-                alert('Failed to import data. Invalid file format or corrupted file.')
-            }
-        }
-        input.click()
-    }
 
-    const handleClearAll = () => {
-        if (showClearConfirm) {
-            clearAllItems()
-            setShowClearConfirm(false)
-        } else {
-            setShowClearConfirm(true)
-            setTimeout(() => setShowClearConfirm(false), 3000)
-        }
-    }
-
-    const handleSaveApiKey = () => {
-        if (apiKey.trim()) {
-            localStorage.setItem('VITE_OPENAI_API_KEY', apiKey)
-            alert('API Key saved! Reload the app to use Real AI.')
-            setApiKey('')
-        }
-    }
-
-    const handleImportTasks = () => {
-        setShowImportModal(true)
-        setImportText('')
-        setImportResult(null)
-    }
 
     const handlePreviewImport = () => {
         if (!importText.trim()) return
@@ -146,68 +74,52 @@ export default function Settings() {
                     </div>
                 </div>
 
-                {/* AI Settings Section */}
+                {/* AI Settings Section - Embedded */}
                 <section className="mb-8">
                     <div className="flex items-center gap-2 mb-4">
-                        <Sparkles className="w-5 h-5 text-purple-400" />
-                        <h2 className="text-xl font-semibold">AI Configuration</h2>
+                        <Sparkles className="w-5 h-5 text-primary-400" />
+                        <h2 className="text-xl font-semibold">AI Settings</h2>
                     </div>
 
-                    <div className="bg-gray-800/50 rounded-xl p-6 space-y-4 border border-white/5">
-                        {/* AI Mode Toggle */}
+                    <div className="bg-gray-900/50 border border-white/5 rounded-xl p-4 space-y-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="font-medium">AI Mode</p>
-                                <p className="text-sm text-gray-400">Use real AI or mock categorization</p>
+                                <h3 className="text-sm font-medium text-white">AI Processor</h3>
+                                <p className="text-xs text-gray-400">Powered by Google Gemini</p>
                             </div>
-                            <button
-                                onClick={() => updateSettings({ aiMode: settings.aiMode === 'real' ? 'mock' : 'real' })}
-                                className={`relative w-16 h-8 rounded-full transition-colors ${settings.aiMode === 'real' ? 'bg-primary-500' : 'bg-gray-600'
-                                    }`}
-                            >
-                                <div
-                                    className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform ${settings.aiMode === 'real' ? 'translate-x-8' : 'translate-x-0'
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
+                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                <span className="text-xs font-medium text-green-400">Active</span>
+                            </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-white/5">
+                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                                Model Selection
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    onClick={() => updateSettings({ model: 'gemini-1.5-flash' })}
+                                    className={`p-3 rounded-lg border text-left transition-all ${settings.model === 'gemini-1.5-flash'
+                                        ? 'bg-primary-500/20 border-primary-500/50 text-white'
+                                        : 'bg-gray-800/50 border-white/5 text-gray-400 hover:bg-gray-800'
                                         }`}
-                                />
-                            </button>
-                        </div>
-
-                        {/* Model Selection */}
-                        <div>
-                            <p className="font-medium mb-2">Model</p>
-                            <select
-                                value={settings.aiModel}
-                                onChange={(e) => updateSettings({ aiModel: e.target.value as 'gpt-4o' | 'gpt-4o-mini' })}
-                                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                disabled={settings.aiMode === 'mock'}
-                            >
-                                <option value="gpt-4o">GPT-4o (More Accurate)</option>
-                                <option value="gpt-4o-mini">GPT-4o Mini (Faster, Cheaper)</option>
-                            </select>
-                        </div>
-
-                        {/* API Key Input */}
-                        {settings.aiMode === 'real' && (
-                            <div>
-                                <p className="font-medium mb-2">OpenAI API Key</p>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="password"
-                                        value={apiKey}
-                                        onChange={(e) => setApiKey(e.target.value)}
-                                        placeholder="sk-..."
-                                        className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                    />
-                                    <button
-                                        onClick={handleSaveApiKey}
-                                        className="px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors"
-                                    >
-                                        Save
-                                    </button>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">Stored locally in your browser</p>
+                                >
+                                    <div className="font-medium text-sm">Gemini 1.5 Flash</div>
+                                    <div className="text-[10px] opacity-70">Fast & Efficient</div>
+                                </button>
+                                <button
+                                    onClick={() => updateSettings({ model: 'gemini-1.5-pro' })}
+                                    className={`p-3 rounded-lg border text-left transition-all ${settings.model === 'gemini-1.5-pro'
+                                        ? 'bg-primary-500/20 border-primary-500/50 text-white'
+                                        : 'bg-gray-800/50 border-white/5 text-gray-400 hover:bg-gray-800'
+                                        }`}
+                                >
+                                    <div className="font-medium text-sm">Gemini 1.5 Pro</div>
+                                    <div className="text-[10px] opacity-70">Complex Reasoning</div>
+                                </button>
                             </div>
-                        )}
+                        </div>
                     </div>
                 </section>
 
@@ -403,204 +315,244 @@ export default function Settings() {
                     </div>
                 </section>
 
-                {/* Data Management Section */}
+                {/* Export Integrations Section */}
                 <section className="mb-8">
                     <div className="flex items-center gap-2 mb-4">
-                        <RotateCcw className="w-5 h-5 text-green-400" />
-                        <h2 className="text-xl font-semibold">Data Management</h2>
+                        <Download className="w-5 h-5 text-cyan-400" />
+                        <h2 className="text-xl font-semibold">Export to Second Brain</h2>
                     </div>
 
-                    <div className="bg-gray-800/50 rounded-xl p-6 space-y-3 border border-white/5">
-                        <button
-                            onClick={handleExportData}
-                            className="w-full flex items-center justify-between px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-                        >
-                            <span className="flex items-center gap-2">
-                                <Download className="w-4 h-4" />
-                                Export Data
-                            </span>
-                            <span className="text-xs text-gray-400">{items.length} items</span>
-                        </button>
+                    <div className="bg-gray-800/50 rounded-xl p-6 space-y-4 border border-white/5">
+                        <p className="text-sm text-gray-400 mb-4">
+                            Export your archived knowledge to your favorite tools.
+                        </p>
 
-                        <button
-                            onClick={handleImportData}
-                            className="w-full flex items-center gap-2 px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-                        >
-                            <Upload className="w-4 h-4" />
-                            Import Data
-                        </button>
+                        <div className="grid gap-3">
+                            <button
+                                onClick={() => {
+                                    const archivedItems = items.filter(i => i.archived)
+                                    if (archivedItems.length === 0) {
+                                        alert('No archived items to export!')
+                                        return
+                                    }
+                                    import('@/lib/exporters').then(({ exportToMarkdown, downloadFile }) => {
+                                        const content = exportToMarkdown(archivedItems)
+                                        downloadFile(content, `fokus-obsidian-export-${Date.now()}.md`, 'text/markdown')
+                                    })
+                                }}
+                                className="flex items-center justify-between px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors border border-purple-500/30 group"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400 group-hover:text-purple-300">
+                                        <FileText className="w-5 h-5" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-medium text-purple-100">Obsidian / Markdown</p>
+                                        <p className="text-xs text-gray-400">Single file with formatted notes</p>
+                                    </div>
+                                </div>
+                                <Download className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors" />
+                            </button>
 
-                        <button
-                            onClick={handleImportTasks}
-                            className="w-full flex items-center gap-2 px-4 py-3 bg-primary-500/20 hover:bg-primary-500/30 border border-primary-500/50 rounded-lg transition-colors"
-                        >
-                            <FileText className="w-4 h-4 text-primary-400" />
-                            <span className="text-primary-300">Import Tasks</span>
-                        </button>
+                            <button
+                                onClick={() => {
+                                    const archivedItems = items.filter(i => i.archived)
+                                    if (archivedItems.length === 0) {
+                                        alert('No archived items to export!')
+                                        return
+                                    }
+                                    import('@/lib/exporters').then(({ exportToCSV, downloadFile }) => {
+                                        const content = exportToCSV(archivedItems)
+                                        downloadFile(content, `fokus-notion-export-${Date.now()}.csv`, 'text/csv')
+                                    })
+                                }}
+                                className="flex items-center justify-between px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors border border-blue-500/30 group"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400 group-hover:text-blue-300">
+                                        <FileText className="w-5 h-5" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-medium text-blue-100">Notion / CSV</p>
+                                        <p className="text-xs text-gray-400">Table format with properties</p>
+                                    </div>
+                                </div>
+                                <Download className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors" />
+                            </button>
 
-                        <button
-                            onClick={handleClearAll}
-                            className={`w-full flex items-center gap-2 px-4 py-3 rounded-lg transition-colors ${showClearConfirm
-                                ? 'bg-red-500 hover:bg-red-600'
-                                : 'bg-gray-700 hover:bg-gray-600'
-                                }`}
-                        >
-                            <Trash2 className="w-4 h-4" />
-                            {showClearConfirm ? 'Click again to confirm' : 'Clear All Items'}
-                        </button>
+                            <button
+                                onClick={() => {
+                                    const archivedItems = items.filter(i => i.archived)
+                                    if (archivedItems.length === 0) {
+                                        alert('No archived items to export!')
+                                        return
+                                    }
+                                    import('@/lib/exporters').then(({ exportToJSON, downloadFile }) => {
+                                        const content = exportToJSON(archivedItems)
+                                        downloadFile(content, `fokus-json-export-${Date.now()}.json`, 'application/json')
+                                    })
+                                }}
+                                className="flex items-center justify-between px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors border border-yellow-500/30 group"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-yellow-500/20 rounded-lg text-yellow-400 group-hover:text-yellow-300">
+                                        <FileText className="w-5 h-5" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-medium text-yellow-100">JSON (Raw)</p>
+                                        <p className="text-xs text-gray-400">Raw data for developers</p>
+                                    </div>
+                                </div>
+                                <Download className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors" />
+                            </button>
+                        </div>
                     </div>
                 </section>
 
-                {/* Footer Info */}
-                <div className="text-center text-gray-500 text-sm space-y-1">
-                    <p>FOKUS - Focus on the What. Decide the When.</p>
-                    <p className="text-xs">Made for ADHD/INTP brains 🧠</p>
-                </div>
-            </div>
-
-            {/* Import Modal */}
-            {showImportModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="w-full max-w-3xl bg-gray-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-                        {/* Modal Header */}
-                        <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-primary-500/20 rounded-lg">
-                                    <FileText className="w-6 h-6 text-primary-400" />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold">Import Tasks</h2>
-                                    <p className="text-sm text-gray-400">Paste your tasks in any format</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setShowImportModal(false)}
-                                className="p-2 hover:bg-white/5 rounded-full transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        {/* Modal Body */}
-                        <div className="p-6 space-y-4 overflow-y-auto flex-1">
-                            {/* Format Selection */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Import Format</label>
-                                <select
-                                    value={importFormat}
-                                    onChange={(e) => setImportFormat(e.target.value as any)}
-                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                >
-                                    <option value="auto">Auto-detect</option>
-                                    <option value="plain">Plain Text (one per line)</option>
-                                    <option value="csv">CSV (title,description,tags,time)</option>
-                                    <option value="json">JSON Array</option>
-                                    <option value="markdown">Markdown Checklist</option>
-                                </select>
-                            </div>
-
-                            {/* Text Input */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Paste Tasks</label>
-                                <textarea
-                                    value={importText}
-                                    onChange={(e) => setImportText(e.target.value)}
-                                    placeholder={
-                                        importFormat === 'plain' ? "Buy milk\nFinish report\nCall dentist" :
-                                            importFormat === 'csv' ? "title,description,tags,time\nBuy milk,Get groceries,shopping,5 min" :
-                                                importFormat === 'json' ? '[{"title": "Buy milk", "tags": ["shopping"]}]' :
-                                                    importFormat === 'markdown' ? "- [ ] Buy milk\n- [ ] Finish report" :
-                                                        "Paste your tasks here..."
-                                    }
-                                    className="w-full h-48 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm resize-none"
-                                />
-                            </div>
-
-                            {/* Preview Button */}
-                            <button
-                                onClick={handlePreviewImport}
-                                disabled={!importText.trim()}
-                                className="w-full px-4 py-2 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg transition-colors"
-                            >
-                                Preview Import
-                            </button>
-
-                            {/* Import Result */}
-                            {importResult && (
-                                <div className={`p-4 rounded-lg border ${importResult.success
-                                    ? 'bg-green-500/10 border-green-500/30'
-                                    : 'bg-red-500/10 border-red-500/30'
-                                    }`}>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        {importResult.success ? (
-                                            <CheckCircle className="w-5 h-5 text-green-400" />
-                                        ) : (
-                                            <AlertCircle className="w-5 h-5 text-red-400" />
-                                        )}
-                                        <span className="font-semibold">
-                                            {importResult.success
-                                                ? `Found ${importResult.items.length} tasks`
-                                                : 'Import failed'}
-                                        </span>
+                {/* Import Modal */}
+                {showImportModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <div className="w-full max-w-3xl bg-gray-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+                            {/* Modal Header */}
+                            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-primary-500/20 rounded-lg">
+                                        <FileText className="w-6 h-6 text-primary-400" />
                                     </div>
-
-                                    {importResult.errors.length > 0 && (
-                                        <div className="mt-2 text-sm text-red-300">
-                                            <p className="font-medium mb-1">Errors:</p>
-                                            <ul className="list-disc list-inside space-y-1">
-                                                {importResult.errors.slice(0, 5).map((error, i) => (
-                                                    <li key={i}>{error}</li>
-                                                ))}
-                                                {importResult.errors.length > 5 && (
-                                                    <li>...and {importResult.errors.length - 5} more</li>
-                                                )}
-                                            </ul>
-                                        </div>
-                                    )}
-
-                                    {importResult.success && importResult.items.length > 0 && (
-                                        <div className="mt-3 space-y-2">
-                                            <p className="text-sm font-medium text-gray-300">Preview:</p>
-                                            <div className="max-h-40 overflow-y-auto space-y-1">
-                                                {importResult.items.slice(0, 10).map((item, i) => (
-                                                    <div key={i} className="text-sm bg-gray-800/50 rounded px-3 py-2">
-                                                        <span className="font-medium">{item.title}</span>
-                                                        <span className="text-gray-500 ml-2">
-                                                            {item.tags.join(', ')}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                                {importResult.items.length > 10 && (
-                                                    <p className="text-xs text-gray-500 px-3">
-                                                        ...and {importResult.items.length - 10} more
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
+                                    <div>
+                                        <h2 className="text-2xl font-bold">Import Tasks</h2>
+                                        <p className="text-sm text-gray-400">Paste your tasks in any format</p>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
+                                <button
+                                    onClick={() => setShowImportModal(false)}
+                                    className="p-2 hover:bg-white/5 rounded-full transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
 
-                        {/* Modal Footer */}
-                        <div className="p-6 border-t border-white/5 flex justify-end gap-3">
-                            <button
-                                onClick={() => setShowImportModal(false)}
-                                className="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleConfirmImport}
-                                disabled={!importResult?.success}
-                                className="px-6 py-2 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg transition-colors"
-                            >
-                                Import {importResult?.items.length || 0} Tasks
-                            </button>
+                            {/* Modal Body */}
+                            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                                {/* Format Selection */}
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Import Format</label>
+                                    <select
+                                        value={importFormat}
+                                        onChange={(e) => setImportFormat(e.target.value as any)}
+                                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    >
+                                        <option value="auto">Auto-detect</option>
+                                        <option value="plain">Plain Text (one per line)</option>
+                                        <option value="csv">CSV (title,description,tags,time)</option>
+                                        <option value="json">JSON Array</option>
+                                        <option value="markdown">Markdown Checklist</option>
+                                    </select>
+                                </div>
+
+                                {/* Text Input */}
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Paste Tasks</label>
+                                    <textarea
+                                        value={importText}
+                                        onChange={(e) => setImportText(e.target.value)}
+                                        placeholder={
+                                            importFormat === 'plain' ? "Buy milk\nFinish report\nCall dentist" :
+                                                importFormat === 'csv' ? "title,description,tags,time\nBuy milk,Get groceries,shopping,5 min" :
+                                                    importFormat === 'json' ? '[{"title": "Buy milk", "tags": ["shopping"]}]' :
+                                                        importFormat === 'markdown' ? "- [ ] Buy milk\n- [ ] Finish report" :
+                                                            "Paste your tasks here..."
+                                        }
+                                        className="w-full h-48 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm resize-none"
+                                    />
+                                </div>
+
+                                {/* Preview Button */}
+                                <button
+                                    onClick={handlePreviewImport}
+                                    disabled={!importText.trim()}
+                                    className="w-full px-4 py-2 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg transition-colors"
+                                >
+                                    Preview Import
+                                </button>
+
+                                {/* Import Result */}
+                                {importResult && (
+                                    <div className={`p-4 rounded-lg border ${importResult.success
+                                        ? 'bg-green-500/10 border-green-500/30'
+                                        : 'bg-red-500/10 border-red-500/30'
+                                        }`}>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            {importResult.success ? (
+                                                <CheckCircle className="w-5 h-5 text-green-400" />
+                                            ) : (
+                                                <AlertCircle className="w-5 h-5 text-red-400" />
+                                            )}
+                                            <span className="font-semibold">
+                                                {importResult.success
+                                                    ? `Found ${importResult.items.length} tasks`
+                                                    : 'Import failed'}
+                                            </span>
+                                        </div>
+
+                                        {importResult.errors.length > 0 && (
+                                            <div className="mt-2 text-sm text-red-300">
+                                                <p className="font-medium mb-1">Errors:</p>
+                                                <ul className="list-disc list-inside space-y-1">
+                                                    {importResult.errors.slice(0, 5).map((error, i) => (
+                                                        <li key={i}>{error}</li>
+                                                    ))}
+                                                    {importResult.errors.length > 5 && (
+                                                        <li>...and {importResult.errors.length - 5} more</li>
+                                                    )}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {importResult.success && importResult.items.length > 0 && (
+                                            <div className="mt-3 space-y-2">
+                                                <p className="text-sm font-medium text-gray-300">Preview:</p>
+                                                <div className="max-h-40 overflow-y-auto space-y-1">
+                                                    {importResult.items.slice(0, 10).map((item, i) => (
+                                                        <div key={i} className="text-sm bg-gray-800/50 rounded px-3 py-2">
+                                                            <span className="font-medium">{item.title}</span>
+                                                            <span className="text-gray-500 ml-2">
+                                                                {item.tags.join(', ')}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                    {importResult.items.length > 10 && (
+                                                        <p className="text-xs text-gray-500 px-3">
+                                                            ...and {importResult.items.length - 10} more
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div className="p-6 border-t border-white/5 flex justify-end gap-3">
+                                <button
+                                    onClick={() => setShowImportModal(false)}
+                                    className="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleConfirmImport}
+                                    disabled={!importResult?.success}
+                                    className="px-6 py-2 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg transition-colors"
+                                >
+                                    Import {importResult?.items.length || 0} Tasks
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     )
 }

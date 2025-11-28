@@ -52,7 +52,7 @@ export default function Home() {
             try {
                 await Promise.all(batch.map(async (capture) => {
                     try {
-                        const result = await processContent(capture.content, settings.aiMode === 'real', settings.model)
+                        const result = await processContent(capture.content, true, settings.model)
 
                         addItem({
                             id: crypto.randomUUID(),
@@ -127,7 +127,7 @@ export default function Home() {
                                 <Loader2 className="w-4 h-4 animate-spin" />
                                 <h3 className="text-sm font-semibold">Processing {pendingCount} item{pendingCount !== 1 ? 's' : ''}...</h3>
                             </div>
-                            <p className="text-xs text-gray-400">Using {settings.aiMode === 'real' ? settings.model : 'mock AI'}</p>
+                            <p className="text-xs text-gray-400">Using {settings.model}</p>
                             <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden mt-1">
                                 <motion.div
                                     className="h-full bg-indigo-500 rounded-full"
@@ -141,7 +141,7 @@ export default function Home() {
                         <>
                             <h3 className="text-sm font-semibold text-indigo-300 mb-1">AI Processor Idle</h3>
                             <p className="text-xs text-gray-400 mb-3">
-                                Mode: {settings.aiMode === 'real' ? `Real (${settings.model})` : 'Mock'}
+                                Mode: AI-Powered ({settings.model})
                             </p>
                             <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
                                 <div className="h-full w-1/3 bg-indigo-500 rounded-full opacity-50"></div>

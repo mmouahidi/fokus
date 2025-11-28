@@ -16,8 +16,8 @@ export interface CaptureItem {
 
 export interface AppSettings {
     aiMode: 'mock' | 'real'
-    aiModel: 'gpt-4o' | 'gpt-4o-mini'
-    model: 'gpt-4o' | 'gpt-4o-mini' // Keep for backwards compatibility
+    aiModel: 'gemini-1.5-pro' | 'gemini-1.5-flash'
+    model: 'gemini-1.5-pro' | 'gemini-1.5-flash' // Keep for backwards compatibility
     soundEnabled: boolean
     notificationsEnabled: boolean
     animationSpeed: 'slow' | 'normal' | 'fast'
@@ -90,6 +90,12 @@ interface AppState {
 
     // Kanban Board
     moveItemToColumn: (id: string, column: 'now' | 'soon' | 'later' | 'someday') => void
+
+    // Archive Management
+    archiveItem: (id: string) => void
+    unarchiveItem: (id: string) => void
+    getActiveItems: () => CardItem[]
+    getArchivedItems: () => CardItem[]
     getItemsByColumn: (column: 'now' | 'soon' | 'later' | 'someday') => CardItem[]
 }
 
@@ -101,8 +107,8 @@ export const useStore = create<AppState>()(
             isProcessing: false,
             settings: {
                 aiMode: 'real',
-                aiModel: 'gpt-4o',
-                model: 'gpt-4o',
+                aiModel: 'gemini-1.5-flash',
+                model: 'gemini-1.5-flash',
                 soundEnabled: true,
                 notificationsEnabled: false,
                 animationSpeed: 'normal',
@@ -341,6 +347,35 @@ export const useStore = create<AppState>()(
 
             getItemsByColumn: (column: 'now' | 'soon' | 'later' | 'someday') => {
                 return get().items.filter(item => item.kanbanColumn === column)
+            },
+
+            // Archive Management Methods
+            archiveItem: (id: string) => {
+                set((state) => ({
+                    items: state.items.map(item =>
+                        item.id === id
+                            ? { ...item, archived: true, archivedAt: Date.now(), completedAt: Date.now() }
+                            : item
+                    )
+                }))
+            },
+
+            unarchiveItem: (id: string) => {
+                set((state) => ({
+                    items: state.items.map(item =>
+                        item.id === id
+                            ? { ...item, archived: false, archivedAt: undefined }
+                            : item
+                    )
+                }))
+            },
+
+            getActiveItems: () => {
+                return get().items.filter(item => !item.archived)
+            },
+
+            getArchivedItems: () => {
+                return get().items.filter(item => item.archived)
             }
         }),
         {

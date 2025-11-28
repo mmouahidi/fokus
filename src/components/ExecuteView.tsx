@@ -62,7 +62,7 @@ export default function ExecuteView({ item, onClose, onComplete }: ExecuteViewPr
 
     // Timer logic for Task type
     useEffect(() => {
-        let interval: NodeJS.Timeout
+        let interval: ReturnType<typeof setInterval>
         if (isActive && timeLeft > 0) {
             interval = setInterval(() => {
                 setTimeLeft((prev) => prev - 1)
@@ -231,12 +231,20 @@ export default function ExecuteView({ item, onClose, onComplete }: ExecuteViewPr
         }
     }
 
+    const [notes, setNotes] = useState(item.notes || '')
+
+    const handleComplete = () => {
+        updateItem(item.id, { notes })
+        onClose() // Close modal first
+        onComplete() // Then trigger completion/archiving
+    }
+
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
         >
             <div className="w-full max-w-2xl bg-gray-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                 {/* Header */}
@@ -264,6 +272,23 @@ export default function ExecuteView({ item, onClose, onComplete }: ExecuteViewPr
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6">
                     {renderContent()}
+
+                    {/* Notes Section */}
+                    <section className="mt-8 pt-6 border-t border-white/5">
+                        <div className="flex items-center gap-2 mb-3">
+                            <FileText className="w-4 h-4 text-primary-400" />
+                            <h3 className="text-sm font-medium text-gray-300">
+                                Key Takeaways & Notes
+                            </h3>
+                        </div>
+                        <textarea
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            placeholder="What did you learn? Capture key insights here before completing..."
+                            className="w-full p-4 bg-gray-950/50 border border-white/10 rounded-xl text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-all resize-none"
+                            rows={4}
+                        />
+                    </section>
                 </div>
 
                 {/* Scheduler Modal */}
@@ -340,18 +365,21 @@ export default function ExecuteView({ item, onClose, onComplete }: ExecuteViewPr
                             {item.scheduledDate ? 'Reschedule' : 'Schedule'}
                         </button>
                         <button
-                            onClick={onClose}
+                            onClick={() => {
+                                updateItem(item.id, { notes })
+                                onClose()
+                            }}
                             className="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
                         >
                             Save for Later
                         </button>
                     </div>
                     <button
-                        onClick={onComplete}
+                        onClick={handleComplete}
                         className="px-6 py-2 rounded-lg text-sm font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors flex items-center gap-2"
                     >
                         <Check className="w-4 h-4" />
-                        Complete
+                        Complete & Archive
                     </button>
                 </div>
             </div>

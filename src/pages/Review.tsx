@@ -16,7 +16,7 @@ function getGreeting() {
 }
 
 export default function Review() {
-    const { items, removeItem, incrementStats, settings, updateItem, removeItems } = useStore()
+    const { items, removeItem, incrementStats, settings, updateItem, removeItems, archiveItem } = useStore()
     const [activeItem, setActiveItem] = useState<CardItem | null>(null)
     const [editingItem, setEditingItem] = useState<CardItem | null>(null)
     const [showTagManager, setShowTagManager] = useState(false)
@@ -24,17 +24,42 @@ export default function Review() {
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [searchQuery, setSearchQuery] = useState('')
     const [filterType, setFilterType] = useState<'all' | 'article' | 'video' | 'idea' | 'task'>('all')
+    const [classificationFilter, setClassificationFilter] = useState<'all' | 'action' | 'reference'>('all')
+    const [dateRange, setDateRange] = useState<'all' | 'today' | 'week' | 'month'>('all')
+    const [showArchived, setShowArchived] = useState(false)
 
-    // Filter items based on search and type
+    // Filter items based on search, type, date, and archive status
     const filteredItems = items.filter(item => {
+        // Archive filter
+        if (!showArchived && item.archived) return false
+        if (showArchived && !item.archived) return false
+
+        // Classification Filter
+        if (classificationFilter === 'action' && item.type !== 'task') return false
+        if (classificationFilter === 'reference' && item.type === 'task') return false
+
         const matchesSearch = searchQuery === '' ||
             item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             item.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.notes?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
 
         const matchesType = filterType === 'all' || item.type === filterType
 
-        return matchesSearch && matchesType
+        // Date filter
+        let matchesDate = true
+        if (dateRange !== 'all') {
+            const date = new Date(item.timestamp || Date.now())
+            const now = new Date()
+            const diffTime = Math.abs(now.getTime() - date.getTime())
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+            if (dateRange === 'today') matchesDate = diffDays <= 1
+            if (dateRange === 'week') matchesDate = diffDays <= 7
+            if (dateRange === 'month') matchesDate = diffDays <= 30
+        }
+
+        return matchesSearch && matchesType && matchesDate
     })
 
     const handleSwipe = (id: string, direction: 'left' | 'right' | 'up') => {
@@ -54,10 +79,10 @@ export default function Review() {
 
     const handleComplete = () => {
         if (activeItem) {
-            removeItem(activeItem.id)
+            setActiveItem(null) // Close modal first
+            archiveItem(activeItem.id) // Then archive the item
             incrementStats()
             playSound('complete', settings.soundEnabled)
-            setActiveItem(null)
         }
     }
 
@@ -165,7 +190,7 @@ export default function Review() {
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search by title, tags, or content..."
+                            placeholder="Search title, notes, tags..."
                             className="w-full pl-10 pr-10 py-2.5 bg-gray-800/50 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all"
                         />
                         {searchQuery && (
@@ -178,21 +203,82 @@ export default function Review() {
                         )}
                     </div>
 
-                    {/* Filter Buttons */}
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                        <Filter className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                        {(['all', 'task', 'article', 'video', 'idea'] as const).map(type => (
+                    {/* Filter Controls */}
+                    <div className="flex flex-col gap-2">
+                        {/* Classification Filter (New) */}
+                        <div className="flex p-1 bg-gray-800/50 rounded-xl border border-white/10">
+                            {(['all', 'action', 'reference'] as const).map(cls => (
+                                <button
+                                    key={cls}
+                                    onClick={() => {
+                                        // Reset specific type filter when changing classification
+                                        setFilterType('all')
+                                        // We need a new state for classification or derive it?
+                                        // Let's add a new state for classification filter
+                                        setClassificationFilter(cls)
+                                    }}
+                                    className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${classificationFilter === cls
+                                        ? 'bg-gray-700 text-white shadow-sm'
+                                        : 'text-gray-400 hover:text-gray-300'
+                                        }`}
+                                >
+                                    {cls.charAt(0).toUpperCase() + cls.slice(1)}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Type Filters (Conditional based on classification?) */}
+                        {/* Actually, let's keep them but filter them visually or logically? 
+                           If I select "Action", only "Task" should be available/visible.
+                           If "Reference", only "Article", "Video", "Idea".
+                           Let's just filter the list for now.
+                        */}
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                            <Filter className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                            {(['all', 'task', 'article', 'video', 'idea'] as const).map(type => {
+                                // Hide types that don't match current classification
+                                if (classificationFilter === 'action' && type !== 'task' && type !== 'all') return null
+                                if (classificationFilter === 'reference' && type === 'task') return null
+
+                                return (
+                                    <button
+                                        key={type}
+                                        onClick={() => setFilterType(type)}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 ${filterType === type
+                                            ? 'bg-primary-500 text-white'
+                                            : 'bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-800'
+                                            }`}
+                                    >
+                                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                                    </button>
+                                )
+                            })}
+                        </div>
+
+                        {/* Date & Archive Filters */}
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                            <div className="w-4 h-4 flex-shrink-0" /> {/* Spacer alignment */}
+                            <select
+                                value={dateRange}
+                                onChange={(e) => setDateRange(e.target.value as any)}
+                                className="px-3 py-1.5 bg-gray-800/50 border border-white/10 rounded-lg text-xs text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                            >
+                                <option value="all">All Time</option>
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                            </select>
+
                             <button
-                                key={type}
-                                onClick={() => setFilterType(type)}
-                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex-shrink-0 ${filterType === type
-                                    ? 'bg-primary-500 text-white'
-                                    : 'bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-800'
+                                onClick={() => setShowArchived(!showArchived)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex-shrink-0 border border-white/10 ${showArchived
+                                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                                    : 'bg-gray-800/50 text-gray-400 hover:text-white'
                                     }`}
                             >
-                                {type.charAt(0).toUpperCase() + type.slice(1)}
+                                {showArchived ? 'Hiding Archived' : 'Show Archived'}
                             </button>
-                        ))}
+                        </div>
                     </div>
                 </div>
 
@@ -217,13 +303,16 @@ export default function Review() {
                     transition={{ delay: 0.4 }}
                     className="mt-8 flex gap-8 text-gray-500 text-sm"
                 >
-                    <div className="flex flex-col items-center gap-1">
+                    <button
+                        onClick={() => filteredItems[0] && handleSwipe(filteredItems[0].id, 'left')}
+                        className="flex flex-col items-center gap-1"
+                    >
                         <div className="w-12 h-12 rounded-full border border-red-500/30 flex items-center justify-center text-red-500 hover:bg-red-500/10 transition-colors">
                             <span className="text-xl">✕</span>
                         </div>
                         <span className="text-xs">Incinerate</span>
                         <span className="text-[10px] text-gray-600">Delete</span>
-                    </div>
+                    </button>
                     <button
                         onClick={() => filteredItems[0] && setEditingItem(filteredItems[0])}
                         className="flex flex-col items-center gap-1"
@@ -234,13 +323,16 @@ export default function Review() {
                         <span className="text-xs">Edit</span>
                         <span className="text-[10px] text-gray-600">E</span>
                     </button>
-                    <div className="flex flex-col items-center gap-1">
+                    <button
+                        onClick={() => filteredItems[0] && handleSwipe(filteredItems[0].id, 'right')}
+                        className="flex flex-col items-center gap-1"
+                    >
                         <div className="w-12 h-12 rounded-full border border-primary-500/30 flex items-center justify-center text-primary-500 hover:bg-primary-500/10 transition-colors">
                             <span className="text-xl">✓</span>
                         </div>
                         <span className="text-xs">Execute</span>
                         <span className="text-[10px] text-gray-600">Space</span>
-                    </div>
+                    </button>
                 </motion.div>
             )}
 

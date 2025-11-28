@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     DndContext,
@@ -53,11 +54,12 @@ export default function Kanban() {
         }
     }, [items.length])
 
-    // Detect topics whenever items change
+    // Detect topics whenever items change - memoized to prevent recalculation
+    const topics = useMemo(() => detectTopics(items), [items])
+
     useEffect(() => {
-        const topics = detectTopics(items)
         setDetectedTopics(topics)
-    }, [items])
+    }, [topics])
 
     const handleDragStart = (event: DragStartEvent) => {
         setActiveId(event.active.id as string)
@@ -79,7 +81,7 @@ export default function Kanban() {
         setActiveId(null)
     }
 
-    const handleAISort = () => {
+    const handleAISort = useCallback(() => {
         setIsAutoSorting(true)
         const recategorized = recategorizeAllItems(items)
 
@@ -90,9 +92,10 @@ export default function Kanban() {
         })
 
         setTimeout(() => setIsAutoSorting(false), 1000)
-    }
+    }, [items, moveItemToColumn])
 
-    const filteredItems = (column: KanbanColumn) => {
+    // Memoize filtered items to prevent recalculation on every render
+    const getFilteredItems = useCallback((column: KanbanColumn) => {
         let columnItems = items.filter(item => item.kanbanColumn === column)
 
         // Apply topic filter
@@ -102,15 +105,16 @@ export default function Kanban() {
 
         // Apply search filter
         if (searchQuery) {
+            const lowerQuery = searchQuery.toLowerCase()
             columnItems = columnItems.filter(item =>
-                item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                item.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+                item.title.toLowerCase().includes(lowerQuery) ||
+                item.summary.toLowerCase().includes(lowerQuery) ||
+                item.tags.some(tag => tag.toLowerCase().includes(lowerQuery))
             )
         }
 
         return columnItems
-    }
+    }, [items, selectedTopic, searchQuery])
 
     const activeItem = activeId ? items.find(i => i.id === activeId) : null
 
@@ -190,7 +194,7 @@ export default function Kanban() {
             >
                 <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                     {COLUMNS.map(column => {
-                        const columnItems = filteredItems(column.id)
+                        const columnItems = getFilteredItems(column.id)
 
                         return (
                             <KanbanColumn
@@ -227,7 +231,7 @@ interface KanbanColumnProps {
     onAddTag: (itemId: string, tag: string) => void
 }
 
-function KanbanColumn({ column, items, allItems, onAddTag }: KanbanColumnProps) {
+const KanbanColumn = React.memo(({ column, items, allItems, onAddTag }: KanbanColumnProps) => {
     const { setNodeRef } = useDroppable({
         id: column.id
     })
@@ -250,16 +254,14 @@ function KanbanColumn({ column, items, allItems, onAddTag }: KanbanColumnProps) 
 
             {/* Cards */}
             <div className="flex-1 space-y-3 overflow-y-auto">
-                <AnimatePresence>
-                    {items.map(item => (
-                        <KanbanCard
-                            key={item.id}
-                            item={item}
-                            allItems={allItems}
-                            onAddTag={onAddTag}
-                        />
-                    ))}
-                </AnimatePresence>
+                {items.map(item => (
+                    <KanbanCard
+                        key={item.id}
+                        item={item}
+                        allItems={allItems}
+                        onAddTag={onAddTag}
+                    />
+                ))}
 
                 {items.length === 0 && (
                     <div className="text-center py-8 text-gray-500 text-sm">
@@ -270,7 +272,7 @@ function KanbanColumn({ column, items, allItems, onAddTag }: KanbanColumnProps) 
             </div>
         </div>
     )
-}
+})
 
 // Kanban Card Component
 interface KanbanCardProps {
@@ -280,7 +282,7 @@ interface KanbanCardProps {
     isDragging?: boolean
 }
 
-function KanbanCard({ item, allItems, onAddTag, isDragging = false }: KanbanCardProps) {
+const KanbanCard = React.memo(({ item, allItems, onAddTag, isDragging = false }: KanbanCardProps) => {
     const [showSuggestions, setShowSuggestions] = useState(false)
     const [suggestedTags, setSuggestedTags] = useState<string[]>([])
     const { attributes, listeners, setNodeRef, transform } = useDraggable({
@@ -304,12 +306,10 @@ function KanbanCard({ item, allItems, onAddTag, isDragging = false }: KanbanCard
             style={style}
             {...listeners}
             {...attributes}
-            layout
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            whileHover={{ scale: 1.02 }}
-            className={`p-4 bg-gray-800/80 backdrop-blur-sm border border-white/10 rounded-lg cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-50' : ''
+            className={`p-4 bg-gray-800/80 backdrop-blur-sm border border-white/10 rounded-lg cursor-grab active:cursor-grabbing transition-transform hover:scale-[1.02] ${isDragging ? 'opacity-50' : ''
                 }`}
         >
             {/* Card Header */}
@@ -396,4 +396,4 @@ function KanbanCard({ item, allItems, onAddTag, isDragging = false }: KanbanCard
             </AnimatePresence>
         </motion.div>
     )
-}
+})

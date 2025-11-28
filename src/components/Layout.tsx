@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Home, PlayCircle, Settings, LayoutGrid, BarChart2 } from 'lucide-react'
+import { Home, PlayCircle, Settings, LayoutGrid, BarChart2, Archive } from 'lucide-react'
 import KeyboardShortcutsHelp from './KeyboardShortcutsHelp'
 import InstallPrompt from './InstallPrompt'
 
@@ -9,8 +9,9 @@ export default function Layout() {
     const navItems = [
         { path: '/', icon: Home, label: 'Home' },
         { path: '/review', icon: PlayCircle, label: 'Review' },
-        { path: '/board', icon: LayoutGrid, label: 'Board' },
+        { path: '/kanban', icon: LayoutGrid, label: 'Board' },
         { path: '/analytics', icon: BarChart2, label: 'Analytics' },
+        { path: '/archive', icon: Archive, label: 'Archive' },
         { path: '/settings', icon: Settings, label: 'Settings' },
     ]
 

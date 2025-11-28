@@ -1,163 +1,92 @@
-# FOKUS - Focus on the What. Decide the When. ✨
+# FOKUS - The ADHD Execution Layer for Your Second Brain 🧠
 
-A frictionless second brain app designed for INTP/ADHD users. Capture thoughts instantly, let AI organize them, and execute when ready.
+**Capture everything. Execute immediately. Export to your knowledge base.**
+
+FOKUS is the missing bridge between your chaotic thoughts and your structured Second Brain (Obsidian, Notion, etc.). It's designed specifically for ADHD/INTP minds that struggle with the friction of traditional knowledge management tools.
 
 ![FOKUS Banner](https://img.shields.io/badge/PWA-Ready-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-Ready-3178C6) ![React](https://img.shields.io/badge/React-19-61DAFB)
 
-## 🧠 Features
+## 🚨 The Problem
+- **Obsidian/Notion** are great for *storing* knowledge, but terrible for *capturing* quick thoughts (too much friction).
+- They are also weak at *executing* on what you capture, leading to "digital hoarding" (passive accumulation).
 
-### Core Workflow
-- **⚡ Quick Capture**: Instantly save ideas, articles, videos, and tasks
-- **🤖 AI Processing**: Automatic categorization and tagging using GPT-4o or GPT-4o-mini
-- **🎴 Card Stack Review**: Swipe through items with intuitive gestures
-- **🎯 Execute Mode**: Focus on one task at a time with built-in Pomodoro timer
+## ✅ The Solution: FOKUS
+1. **⚡ Capture** - Frictionless input from anywhere (PWA, share target).
+2. **🤖 Process** - AI automatically categorizes items (Article, Video, Task, Idea).
+3. **🎯 Execute** - Built-in tools to consume content or complete tasks immediately.
+4. **📤 Export** - Send polished, processed insights to your Second Brain.
 
-### Built-In Tools
-- **📺 Video Player**: Embedded YouTube/Vimeo playback
-- **📄 Article Reader**: Read and annotate articles
-- **⏱️ Pomodoro Timer**: 25-minute focus sessions for tasks
-- **💭 Idea Expansion**: Dedicated space to develop thoughts
+---
 
-### Smart Features
-- **🔥 Streak Tracking**: Build daily habits
-- **🏷️ Auto-Tagging**: AI generates relevant tags
-- **💾 Data Export/Import**: Full control over your data
-- **📱 PWA**: Install as a native app on any device
-- **🔄 Offline Support**: Works without internet
+## ✨ Key Features
 
-## 🚀 Quick Start
+### 1. Frictionless Capture & AI Processing
+- **Instant Capture**: Just type or paste. No fields, no forms.
+- **Auto-Categorization**: AI detects if it's a video to watch, article to read, task to do, or idea to develop.
+- **Auto-Tagging**: AI generates relevant tags automatically.
 
-### Prerequisites
-- Node.js 18+ and npm
-- OpenAI API key (for AI features)
+### 2. The Execution Queue (Review)
+- **Tinder-style Interface**: Swipe right to **Execute**, left to **Delete**, up to **Archive**.
+- **Context-Aware Actions**:
+  - **Tasks** → "Complete"
+  - **Articles** → "Read" (with built-in reader)
+  - **Videos** → "Watch" (with embedded player)
+  - **Ideas** → "Process" (with expansion editor)
 
-### Installation
+### 3. Knowledge Retention
+- **📝 Notes & Takeaways**: Capture insights *while* you execute/consume.
+- **🗄️ Archive**: Completed items are never lost. Searchable archive with full history.
+- **🔍 Enhanced Search**: Find items by title, tags, or your personal notes.
 
-1. **Clone the repository**
+### 4. Second Brain Integrations
+- **💎 Obsidian Export**: Generates Markdown files with frontmatter, tags, and formatted notes.
+- **Notion Export**: Generates CSV files compatible with Notion's import.
+- **JSON Backup**: Full data ownership.
+
+---
+
+## 🚀 Workflow
+
+1. **Capture** (10s): Dump an idea or link into FOKUS.
+2. **Process** (Auto): AI organizes it into your queue.
+3. **Execute** (Focus): When ready, open FOKUS. The queue forces you to decide: Do it now, or delete it.
+4. **Annotate**: Add key takeaways in the Notes field.
+5. **Export**: Archive the item and send the processed knowledge to your permanent Second Brain.
+
+---
+
+## 🛠️ Tech Stack
+- **Frontend**: React 19, TypeScript, Tailwind CSS 4
+- **State**: Zustand (Local-First, Offline-Ready)
+- **AI**: Google Gemini / OpenAI (Configurable)
+- **PWA**: Installable on iOS/Android
+
+## 📦 Installation
+
+1. **Clone & Install**
    ```bash
-   git clone <your-repo-url>
+   git clone <repo-url>
    cd second-brain
-   ```
-
-2. **Install dependencies**
-   ```bash
    npm install
    ```
 
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
+2. **Configure AI**
+   Copy `.env.example` to `.env` and add your API key:
+   ```env
+   VITE_GOOGLE_API_KEY=your-gemini-key
+   # OR
+   VITE_OPENAI_API_KEY=your-openai-key
    ```
-   
-   Edit `.env` and add your OpenAI API key:
-   ```
-   VITE_OPENAI_API_KEY=your-api-key-here
-   ```
-   
-   Get an API key from: https://platform.openai.com/api-keys
 
-4. **Start development server**
+3. **Run**
    ```bash
    npm run dev
    ```
 
-5. **Open in browser**
-   ```
-   http://localhost:5173
-   ```
-
-## 📱 Usage
-
-### Capturing
-1. Type or paste anything into the input box on the home page
-2. AI automatically categorizes it (article, video, idea, or task)
-3. Items are queued for review
-
-### Reviewing
-1. Go to the Review page
-2. **Swipe right** or press **Space** to execute an item
-3. **Swipe left** or press **Delete** to discard
-4. **Swipe up** to save for later
-
-### Keyboard Shortcuts
-- **Space**: Execute current item
-- **Delete/Backspace**: Delete current item
-- **Arrow Up**: Save for later
-- **Escape**: Close modals
-
-## 🛠️ Tech Stack
-
-- **Frontend**: React 19, TypeScript
-- **Styling**: Tailwind CSS 4
-- **State**: Zustand with localStorage persistence
-- **Animations**: Framer Motion
-- **AI**: OpenAI API (GPT-4o / GPT-4o-mini)
-- **Build**: Vite
-- **PWA**: vite-plugin-pwa
-
-## 📦 Scripts
-
-```bash
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run preview  # Preview production build
-npm run lint     # Run ESLint
-```
-
-## 🎨 Customization
-
-### AI Mode
-Toggle between:
-- **Real AI**: Uses OpenAI GPT models (requires API key)
-- **Mock AI**: Rule-based categorization (no API key needed)
-
-Configure in **Settings** → **AI Configuration**
-
-### Animation Speed
-Adjust card animations speed: Slow / Normal / Fast
-
-## 💾 Data Management
-
-### Export
-Settings → Data Management → Export Data
-
-Creates a JSON backup of:
-- All captured items
-- Settings
-- Statistics
-
-### Import
-Settings → Data Management → Import Tasks
-
-Supports multiple formats:
-- Plain text (one per line)
-- CSV
-- JSON
-- Markdown checklists
-
-## 🔒 Privacy & Security
-
-- **Local First**: All data stored in browser localStorage
-- **No Tracking**: Zero analytics or tracking
-- **API Key**: Stored locally, never sent to our servers
-- **Open Source**: Full transparency
-
-## 🤝 Contributing
-
-Contributions welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
-## 📄 License
-
-MIT License - feel free to use this for personal or commercial projects.
-
-## 🙏 Acknowledgments
-
-Built for fellow ADHD/INTP thinkers who need to capture everything but execute strategically.
+## 📚 Documentation
+- [Obsidian Integration Guide](./docs/obsidian-integration.md)
+- [Notion Integration Guide](./docs/notion-integration.md)
 
 ---
 
-**Made with 🧠 by someone who forgets everything**
+**Made with 🧠 by someone who forgets everything.**
