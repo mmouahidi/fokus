@@ -50,8 +50,8 @@ export default function Review() {
             // Date filter
             let matchesDate = true
             if (dateRange !== 'all') {
-                const date = new Date(item.timestamp || Date.now())
                 const now = new Date()
+                const date = new Date(item.timestamp || now.getTime())
                 const diffTime = Math.abs(now.getTime() - date.getTime())
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
