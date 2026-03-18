@@ -64,7 +64,7 @@ export default function Review() {
         })
     }, [items, showArchived, classificationFilter, searchQuery, filterType, dateRange])
 
-    const handleSwipe = (id: string, direction: 'left' | 'right' | 'up') => {
+    const handleSwipe = useCallback((id: string, direction: 'left' | 'right' | 'up') => {
         if (direction === 'right') {
             const item = items.find(i => i.id === id)
             if (item) {
@@ -77,7 +77,7 @@ export default function Review() {
         } else {
             removeItem(id)
         }
-    }
+    }, [items, removeItem, settings.soundEnabled])
 
     const handleComplete = () => {
         if (activeItem) {
@@ -123,7 +123,7 @@ export default function Review() {
 
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [filteredItems, activeItem, selectMode, removeItem])
+    }, [filteredItems, activeItem, selectMode, handleSwipe])
 
     return (
         <div className="flex flex-col items-center justify-start min-h-screen p-4 pt-12 pb-32">
@@ -262,7 +262,7 @@ export default function Review() {
                             <div className="w-4 h-4 flex-shrink-0" /> {/* Spacer alignment */}
                             <select
                                 value={dateRange}
-                                onChange={(e) => setDateRange(e.target.value as any)}
+                                onChange={(e) => setDateRange(e.target.value as 'all' | 'today' | 'week' | 'month')}
                                 className="px-3 py-1.5 bg-gray-800/50 border border-white/10 rounded-lg text-xs text-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
                             >
                                 <option value="all">All Time</option>

@@ -439,7 +439,7 @@ export default function Settings() {
                                     <label className="block text-sm font-medium mb-2">Import Format</label>
                                     <select
                                         value={importFormat}
-                                        onChange={(e) => setImportFormat(e.target.value as any)}
+                                        onChange={(e) => setImportFormat(e.target.value as 'auto' | 'plain' | 'csv' | 'json' | 'markdown')}
                                         className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     >
                                         <option value="auto">Auto-detect</option>

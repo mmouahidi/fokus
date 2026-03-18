@@ -13,7 +13,7 @@ export interface NotificationOptions {
     body: string
     icon?: string
     tag?: string
-    data?: any
+    data?: Record<string, unknown>
 }
 
 class NotificationService {
@@ -134,7 +134,7 @@ class NotificationService {
     /**
      * Send task completion notification
      */
-    notifyTaskCompleted(taskTitle: string, config?: any): void {
+    notifyTaskCompleted(taskTitle: string, config?: { enabled: boolean; start: string; end: string }): void {
         this.sendNotification('task_completed', {
             title: '✅ Task Completed!',
             body: taskTitle,
@@ -145,7 +145,7 @@ class NotificationService {
     /**
      * Send milestone notification
      */
-    notifyMilestoneReached(count: number, config?: any): void {
+    notifyMilestoneReached(count: number, config?: { enabled: boolean; start: string; end: string }): void {
         const milestones = [10, 25, 50, 100, 250, 500, 1000]
         const isMilestone = milestones.includes(count)
 
@@ -161,7 +161,7 @@ class NotificationService {
     /**
      * Send streak milestone notification
      */
-    notifyStreakMilestone(streakDays: number, config?: any): void {
+    notifyStreakMilestone(streakDays: number, config?: { enabled: boolean; start: string; end: string }): void {
         const streakMilestones = [3, 7, 14, 30, 60, 90, 180, 365]
         const isMilestone = streakMilestones.includes(streakDays)
 
@@ -177,7 +177,7 @@ class NotificationService {
     /**
      * Send processing complete notification
      */
-    notifyProcessingComplete(itemsProcessed: number, config?: any): void {
+    notifyProcessingComplete(itemsProcessed: number, config?: { enabled: boolean; start: string; end: string }): void {
         if (itemsProcessed > 0) {
             this.sendNotification('processing_complete', {
                 title: '🤖 AI Processing Complete',
@@ -190,7 +190,7 @@ class NotificationService {
     /**
      * Send daily review reminder
      */
-    sendDailyReminder(pendingItems: number, config?: any): void {
+    sendDailyReminder(pendingItems: number, config?: { enabled: boolean; start: string; end: string }): void {
         this.sendNotification('daily_reminder', {
             title: '📝 Time to Review',
             body: `You have ${pendingItems} items waiting for review`,
@@ -201,7 +201,7 @@ class NotificationService {
     /**
      * Schedule daily reminder at specific time
      */
-    scheduleDailyReminder(time: string, getPendingCount: () => number, config?: any): void {
+    scheduleDailyReminder(time: string, getPendingCount: () => number, config?: { enabled: boolean; start: string; end: string }): void {
         // Clear existing interval
         if (this.dailyReminderInterval) {
             clearInterval(this.dailyReminderInterval)

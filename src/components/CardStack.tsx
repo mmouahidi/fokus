@@ -103,7 +103,7 @@ const Card = React.memo(({ item, index, active, onSwipe }: { item: CardItem, ind
     const typeColors = getTypeColors(item.type)
     const rotStatus = getRotStatus(item.timestamp)
 
-    const handleDragEnd = async (_: any, info: any) => {
+    const handleDragEnd = async (_: unknown, info: { offset: { x: number; y: number }, velocity: { x: number; y: number } }) => {
         const offset = info.offset.x
         const velocity = info.velocity.x
 

@@ -83,7 +83,9 @@ export default function ExecuteView({ item, onClose, onComplete }: ExecuteViewPr
                 setTimeLeft((prev) => prev - 1)
             }, 1000)
         } else if (timeLeft === 0) {
-            setIsActive(false)
+            setTimeout(() => {
+                setIsActive(false)
+            }, 0)
             // TODO: Play completion sound
         }
         return () => clearInterval(interval)
@@ -109,7 +111,7 @@ export default function ExecuteView({ item, onClose, onComplete }: ExecuteViewPr
 
     const renderContent = () => {
         switch (item.type) {
-            case 'video':
+            case 'video': {
                 const video = extractVideoId(item)
                 return (
                     <div className="w-full aspect-video bg-black rounded-xl overflow-hidden mb-4">
@@ -151,6 +153,7 @@ export default function ExecuteView({ item, onClose, onComplete }: ExecuteViewPr
                         )}
                     </div>
                 )
+            }
 
             case 'article':
                 return (

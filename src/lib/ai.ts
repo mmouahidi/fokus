@@ -183,7 +183,7 @@ export async function realProcessCapture(content: string, model: 'gemini-1.5-pro
         // Check if content is a URL
         const urlRegex = /^(http|https):\/\/[^ "]+$/;
         let finalContent = content;
-        let isUrl = urlRegex.test(content.trim());
+        const isUrl = urlRegex.test(content.trim());
 
         if (isUrl) {
             const fetchedContent = await fetchUrlContent(content.trim());
