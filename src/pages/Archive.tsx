@@ -1,11 +1,29 @@
 import { useState } from 'react'
 import { useStore } from '@/lib/store'
 import { motion } from 'framer-motion'
-import { Archive as ArchiveIcon, Trash2, RefreshCw, Search, X } from 'lucide-react'
+import { Archive as ArchiveIcon, Trash2, RefreshCw, Search, X, CheckSquare, Copy, Check } from 'lucide-react'
 
 export default function Archive() {
-    const { getArchivedItems, unarchiveItem, removeItem } = useStore()
+    const { getArchivedItems, unarchiveItem, removeItem, removeItems } = useStore()
     const [searchQuery, setSearchQuery] = useState('')
+    const [selectMode, setSelectMode] = useState(false)
+    const [selectedIds, setSelectedIds] = useState<string[]>([])
+    const [copiedId, setCopiedId] = useState<string | null>(null)
+
+    const handleCopy = (item: import('@/components/CardStack').CardItem, e: React.MouseEvent) => {
+        e.stopPropagation()
+        const textToCopy = [
+            `Title: ${item.title}`,
+            `Summary: ${item.summary}`,
+            item.url ? `URL: ${item.url}` : '',
+            item.notes ? `\nNotes:\n${item.notes}` : ''
+        ].filter(Boolean).join('\n')
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            setCopiedId(item.id)
+            setTimeout(() => setCopiedId(null), 2000)
+        })
+    }
 
     const archivedItems = getArchivedItems().filter(item => {
         if (!searchQuery) return true
@@ -28,6 +46,14 @@ export default function Archive() {
         }
     }
 
+    const handleBulkDelete = () => {
+        if (selectedIds.length > 0 && confirm(`Permanently delete ${selectedIds.length} items? This cannot be undone.`)) {
+            removeItems(selectedIds)
+            setSelectedIds([])
+            setSelectMode(false)
+        }
+    }
+
     return (
         <div className="p-6 max-w-4xl mx-auto pb-24">
             <header className="mb-8">
@@ -39,6 +65,46 @@ export default function Archive() {
                     {archivedItems.length} archived item{archivedItems.length !== 1 ? 's' : ''}
                     {searchQuery && ' found'}
                 </p>
+
+                <div className="w-full max-w-md mt-4 flex items-center gap-2 mb-4">
+                    <button
+                        onClick={() => {
+                            setSelectMode(!selectMode)
+                            setSelectedIds([])
+                        }}
+                        className={`flex items-center gap-2 px-3 py-2 border border-white/10 rounded-lg text-sm transition-colors ${selectMode
+                            ? 'bg-primary-500 text-white'
+                            : 'bg-gray-800/50 hover:bg-gray-800 text-gray-300'
+                            }`}
+                    >
+                        <CheckSquare className="w-4 h-4" />
+                        <span className="hidden sm:inline">{selectMode ? 'Cancel' : 'Select'}</span>
+                    </button>
+                    {!selectMode && archivedItems.length > 0 && (
+                        <button
+                            onClick={() => {
+                                if (confirm('Are you sure you want to permanently delete all archived items? This cannot be undone.')) {
+                                    removeItems(archivedItems.map(item => item.id))
+                                }
+                            }}
+                            className="flex items-center gap-2 px-3 py-2 border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-sm transition-colors ml-auto"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            <span className="hidden sm:inline">Clear All</span>
+                        </button>
+                    )}
+                    {selectMode && selectedIds.length > 0 && (
+                        <motion.button
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            onClick={handleBulkDelete}
+                            className="flex items-center gap-2 px-3 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-sm text-red-300 transition-colors"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            Delete ({selectedIds.length})
+                        </motion.button>
+                    )}
+                </div>
 
                 {/* Search Bar */}
                 <div className="relative max-w-md">
@@ -80,9 +146,33 @@ export default function Archive() {
                             key={item.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="p-4 bg-gray-800/50 border border-white/10 rounded-xl hover:border-white/20 transition-colors"
+                            onClick={() => {
+                                if (selectMode) {
+                                    setSelectedIds(prev =>
+                                        prev.includes(item.id)
+                                            ? prev.filter(id => id !== item.id)
+                                            : [...prev, item.id]
+                                    )
+                                }
+                            }}
+                            className={`p-4 rounded-xl border transition-colors ${
+                                selectMode ? 'cursor-pointer' : ''
+                            } ${
+                                selectedIds.includes(item.id)
+                                    ? 'bg-primary-500/20 border-primary-500/50'
+                                    : 'bg-gray-800/50 border-white/10 hover:border-white/20'
+                            }`}
                         >
                             <div className="flex items-start justify-between gap-4">
+                                {selectMode && (
+                                    <div className={`mt-1 flex-shrink-0 w-5 h-5 rounded flex items-center justify-center border ${
+                                        selectedIds.includes(item.id)
+                                            ? 'bg-primary-500 border-primary-500'
+                                            : 'border-gray-500'
+                                    }`}>
+                                        {selectedIds.includes(item.id) && <CheckSquare className="w-3 h-3 text-white" />}
+                                    </div>
+                                )}
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-2">
                                         <div className="flex items-center gap-1">
@@ -128,22 +218,31 @@ export default function Archive() {
                                     )}
                                 </div>
 
+                                {!selectMode && (
                                 <div className="flex flex-col gap-2">
                                     <button
-                                        onClick={() => handleRestore(item.id)}
+                                        onClick={(e) => handleCopy(item, e)}
+                                        className="flex items-center gap-1 px-3 py-1.5 bg-gray-700/50 hover:bg-gray-700 border border-gray-600 rounded-lg text-xs text-gray-300 transition-colors"
+                                    >
+                                        {copiedId === item.id ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                                        Copy
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleRestore(item.id); }}
                                         className="flex items-center gap-1 px-3 py-1.5 bg-primary-500/20 hover:bg-primary-500/30 border border-primary-500/30 rounded-lg text-xs text-primary-300 transition-colors"
                                     >
                                         <RefreshCw className="w-3 h-3" />
                                         Restore
                                     </button>
                                     <button
-                                        onClick={() => handlePermanentDelete(item.id)}
+                                        onClick={(e) => { e.stopPropagation(); handlePermanentDelete(item.id); }}
                                         className="flex items-center gap-1 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-xs text-red-300 transition-colors"
                                     >
                                         <Trash2 className="w-3 h-3" />
                                         Delete
                                     </button>
                                 </div>
+                                )}
                             </div>
                         </motion.div>
                     ))}

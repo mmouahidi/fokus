@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Filter, X, Edit, Tag, CheckSquare, Trash2 } from 'lucide-react'
 import CardStack, { type CardItem } from '@/components/CardStack'
@@ -29,38 +29,40 @@ export default function Review() {
     const [showArchived, setShowArchived] = useState(false)
 
     // Filter items based on search, type, date, and archive status
-    const filteredItems = items.filter(item => {
-        // Archive filter
-        if (!showArchived && item.archived) return false
-        if (showArchived && !item.archived) return false
+    const filteredItems = useMemo(() => {
+        return items.filter(item => {
+            // Archive filter
+            if (!showArchived && item.archived) return false
+            if (showArchived && !item.archived) return false
 
-        // Classification Filter
-        if (classificationFilter === 'action' && item.type !== 'task') return false
-        if (classificationFilter === 'reference' && item.type === 'task') return false
+            // Classification Filter
+            if (classificationFilter === 'action' && item.type !== 'task') return false
+            if (classificationFilter === 'reference' && item.type === 'task') return false
 
-        const matchesSearch = searchQuery === '' ||
-            item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.notes?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+            const matchesSearch = searchQuery === '' ||
+                item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                item.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                item.notes?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
 
-        const matchesType = filterType === 'all' || item.type === filterType
+            const matchesType = filterType === 'all' || item.type === filterType
 
-        // Date filter
-        let matchesDate = true
-        if (dateRange !== 'all') {
-            const date = new Date(item.timestamp || Date.now())
-            const now = new Date()
-            const diffTime = Math.abs(now.getTime() - date.getTime())
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+            // Date filter
+            let matchesDate = true
+            if (dateRange !== 'all') {
+                const date = new Date(item.timestamp || Date.now())
+                const now = new Date()
+                const diffTime = Math.abs(now.getTime() - date.getTime())
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
-            if (dateRange === 'today') matchesDate = diffDays <= 1
-            if (dateRange === 'week') matchesDate = diffDays <= 7
-            if (dateRange === 'month') matchesDate = diffDays <= 30
-        }
+                if (dateRange === 'today') matchesDate = diffDays <= 1
+                if (dateRange === 'week') matchesDate = diffDays <= 7
+                if (dateRange === 'month') matchesDate = diffDays <= 30
+            }
 
-        return matchesSearch && matchesType && matchesDate
-    })
+            return matchesSearch && matchesType && matchesDate
+        })
+    }, [items, showArchived, classificationFilter, searchQuery, filterType, dateRange])
 
     const handleSwipe = (id: string, direction: 'left' | 'right' | 'up') => {
         if (direction === 'right') {
@@ -294,7 +296,45 @@ export default function Review() {
                 )}
             </header>
 
-            <CardStack items={filteredItems} onSwipe={handleSwipe} />
+            {!selectMode ? (
+                <CardStack items={filteredItems} onSwipe={handleSwipe} />
+            ) : (
+                <div className="w-full max-w-2xl mt-8 flex flex-col gap-3">
+                    {filteredItems.map(item => (
+                        <div
+                            key={item.id}
+                            onClick={() => {
+                                setSelectedIds(prev =>
+                                    prev.includes(item.id)
+                                        ? prev.filter(id => id !== item.id)
+                                        : [...prev, item.id]
+                                )
+                            }}
+                            className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${
+                                selectedIds.includes(item.id)
+                                    ? 'bg-primary-500/20 border-primary-500/50'
+                                    : 'bg-gray-800/50 border-white/10 hover:border-white/20'
+                            }`}
+                        >
+                            <div className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center border ${
+                                selectedIds.includes(item.id)
+                                    ? 'bg-primary-500 border-primary-500'
+                                    : 'border-gray-500'
+                            }`}>
+                                {selectedIds.includes(item.id) && <CheckSquare className="w-3 h-3 text-white" />}
+                            </div>
+                            <div className="flex-1 overflow-hidden">
+                                <h3 className="text-sm font-semibold text-white line-clamp-1">{item.title}</h3>
+                                <p className="text-xs text-gray-400 line-clamp-1">{item.summary}</p>
+                            </div>
+                            <span className="text-xs text-gray-500 capitalize">{item.type}</span>
+                        </div>
+                    ))}
+                    {filteredItems.length === 0 && (
+                        <p className="text-center text-gray-500 text-sm py-8">No items match your filters.</p>
+                    )}
+                </div>
+            )}
 
             {filteredItems.length > 0 && !selectMode && (
                 <motion.div

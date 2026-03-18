@@ -95,25 +95,28 @@ export default function Kanban() {
     }, [items, moveItemToColumn])
 
     // Memoize filtered items to prevent recalculation on every render
-    const getFilteredItems = useCallback((column: KanbanColumn) => {
-        let columnItems = items.filter(item => item.kanbanColumn === column)
+    const filteredItemsByColumn = useMemo(() => {
+        const lowerQuery = searchQuery.toLowerCase()
+        return COLUMNS.reduce((acc, column) => {
+            let columnItems = items.filter(item => item.kanbanColumn === column.id)
 
-        // Apply topic filter
-        if (selectedTopic) {
-            columnItems = filterByTopic(columnItems, selectedTopic)
-        }
+            // Apply topic filter
+            if (selectedTopic) {
+                columnItems = filterByTopic(columnItems, selectedTopic)
+            }
 
-        // Apply search filter
-        if (searchQuery) {
-            const lowerQuery = searchQuery.toLowerCase()
-            columnItems = columnItems.filter(item =>
-                item.title.toLowerCase().includes(lowerQuery) ||
-                item.summary.toLowerCase().includes(lowerQuery) ||
-                item.tags.some(tag => tag.toLowerCase().includes(lowerQuery))
-            )
-        }
+            // Apply search filter
+            if (searchQuery) {
+                columnItems = columnItems.filter(item =>
+                    item.title.toLowerCase().includes(lowerQuery) ||
+                    item.summary.toLowerCase().includes(lowerQuery) ||
+                    item.tags.some(tag => tag.toLowerCase().includes(lowerQuery))
+                )
+            }
 
-        return columnItems
+            acc[column.id] = columnItems
+            return acc
+        }, {} as Record<KanbanColumn, CardItem[]>)
     }, [items, selectedTopic, searchQuery])
 
     const activeItem = activeId ? items.find(i => i.id === activeId) : null
@@ -194,7 +197,7 @@ export default function Kanban() {
             >
                 <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                     {COLUMNS.map(column => {
-                        const columnItems = getFilteredItems(column.id)
+                        const columnItems = filteredItemsByColumn[column.id] || []
 
                         return (
                             <KanbanColumn
