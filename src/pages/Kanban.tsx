@@ -52,6 +52,7 @@ export default function Kanban() {
                 }
             })
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [items.length])
 
     // Detect topics whenever items change - memoized to prevent recalculation

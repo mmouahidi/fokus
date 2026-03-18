@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Filter, X, Edit, Tag, CheckSquare, Trash2 } from 'lucide-react'
 import CardStack, { type CardItem } from '@/components/CardStack'
