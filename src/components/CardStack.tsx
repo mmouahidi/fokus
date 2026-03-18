@@ -1,6 +1,7 @@
 import { motion, useMotionValue, useTransform, useAnimation } from 'framer-motion'
 import React from 'react'
-import { Clock, AlertTriangle, FileText } from 'lucide-react'
+import { Clock, AlertTriangle, FileText, Link as LinkIcon, Check } from 'lucide-react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 export interface CardItem {
@@ -61,6 +62,26 @@ const getAgeDisplay = (timestamp?: number): string | null => {
     return 'just now'
 }
 
+// Helper functions moved out of component to avoid recreation
+const rotStyles: Record<RotStatus, string> = {
+    fresh: '',
+    aging: 'grayscale-[15%] contrast-[0.95]',
+    stale: 'grayscale-[40%] contrast-[0.9] brightness-[0.95]',
+    rotting: 'grayscale-[70%] contrast-[0.85] brightness-[0.9] border-amber-800/60',
+    decayed: 'grayscale-[95%] contrast-[0.75] brightness-[0.85] border-red-900/70 bg-red-950/20'
+}
+
+// Context-aware swipe text
+const getSwipeActionText = (type: CardItem['type']) => {
+    switch (type) {
+        case 'task': return 'Complete'
+        case 'article': return 'Read'
+        case 'video': return 'Watch'
+        case 'idea': return 'Process'
+        default: return 'Execute'
+    }
+}
+
 // Memoize Card component to prevent unnecessary re-renders
 const Card = React.memo(({ item, index, active, onSwipe }: { item: CardItem, index: number, active: boolean, onSwipe: (dir: 'left' | 'right' | 'up') => void }) => {
     const x = useMotionValue(0)
@@ -72,6 +93,8 @@ const Card = React.memo(({ item, index, active, onSwipe }: { item: CardItem, ind
     const bgRight = useTransform(x, [0, 150], ['rgba(0,0,0,0)', 'rgba(16, 185, 129, 0.2)']) // Green for Execute
     const bgLeft = useTransform(x, [-150, 0], ['rgba(239, 68, 68, 0.2)', 'rgba(0,0,0,0)']) // Red for Incinerate
 
+    const [copiedUrl, setCopiedUrl] = useState(false)
+
     // Text Feedback Opacity
     const executeOpacity = useTransform(x, [50, 150], [0, 1])
     const incinerateOpacity = useTransform(x, [-150, -50], [1, 0])
@@ -80,7 +103,7 @@ const Card = React.memo(({ item, index, active, onSwipe }: { item: CardItem, ind
     const typeColors = getTypeColors(item.type)
     const rotStatus = getRotStatus(item.timestamp)
 
-    const handleDragEnd = async (_: any, info: any) => {
+    const handleDragEnd = async (_: unknown, info: { offset: { x: number; y: number }, velocity: { x: number; y: number } }) => {
         const offset = info.offset.x
         const velocity = info.velocity.x
 
@@ -98,26 +121,6 @@ const Card = React.memo(({ item, index, active, onSwipe }: { item: CardItem, ind
             onSwipe('left')
         } else {
             controls.start({ x: 0, y: 0 })
-        }
-    }
-
-    // Progressive Rot Visuals
-    const rotStyles: Record<RotStatus, string> = {
-        fresh: '',
-        aging: 'grayscale-[15%] contrast-[0.95]',
-        stale: 'grayscale-[40%] contrast-[0.9] brightness-[0.95]',
-        rotting: 'grayscale-[70%] contrast-[0.85] brightness-[0.9] border-amber-800/60',
-        decayed: 'grayscale-[95%] contrast-[0.75] brightness-[0.85] border-red-900/70 bg-red-950/20'
-    }
-
-    // Context-aware swipe text
-    const getSwipeActionText = (type: CardItem['type']) => {
-        switch (type) {
-            case 'task': return 'Complete'
-            case 'article': return 'Read'
-            case 'video': return 'Watch'
-            case 'idea': return 'Process'
-            default: return 'Execute'
         }
     }
 
@@ -201,6 +204,23 @@ const Card = React.memo(({ item, index, active, onSwipe }: { item: CardItem, ind
 
                     <h2 className="text-3xl font-bold text-white mb-4 leading-tight">{item.title}</h2>
                     <p className="text-gray-300 text-lg leading-relaxed mb-6 flex-1 line-clamp-[8]">{item.summary}</p>
+
+                    {item.url && (
+                        <div className="absolute top-6 right-6 z-20">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    navigator.clipboard.writeText(item.url!)
+                                    setCopiedUrl(true)
+                                    setTimeout(() => setCopiedUrl(false), 2000)
+                                }}
+                                className="p-2 bg-gray-800/80 hover:bg-gray-700/80 backdrop-blur rounded-full transition-colors border border-white/10 shadow-lg text-gray-300"
+                                title="Copy URL"
+                            >
+                                {copiedUrl ? <Check className="w-4 h-4 text-green-400" /> : <LinkIcon className="w-4 h-4" />}
+                            </button>
+                        </div>
+                    )}
 
                     <div className="flex flex-wrap gap-2 mt-auto">
                         {item.tags.map((tag: string) => (

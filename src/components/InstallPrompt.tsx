@@ -2,29 +2,39 @@ import { useState, useEffect } from 'react'
 import { Download, X, Share } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
+interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed', platform: string }>;
+}
+
 export default function InstallPrompt() {
-    const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+    const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
     const [showPrompt, setShowPrompt] = useState(false)
     const [isIOS, setIsIOS] = useState(false)
 
     useEffect(() => {
         // Handle standard install prompt (Android/Desktop)
-        const handler = (e: any) => {
+        const handler = (e: Event) => {
             e.preventDefault()
-            setDeferredPrompt(e)
-            setShowPrompt(true)
+            setTimeout(() => {
+                setDeferredPrompt(e as BeforeInstallPromptEvent)
+                setShowPrompt(true)
+            }, 0)
         }
 
         window.addEventListener('beforeinstallprompt', handler)
 
         // Handle iOS
-        const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+        const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window)
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches
 
         if (isIOSDevice && !isStandalone) {
-            setIsIOS(true)
             // Delay showing prompt on iOS to not be annoying immediately
-            setTimeout(() => setShowPrompt(true), 3000)
+            const timer = setTimeout(() => {
+                setIsIOS(true)
+                setShowPrompt(true)
+            }, 3000)
+            return () => clearTimeout(timer)
         }
 
         return () => {

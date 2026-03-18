@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Play, FileText, Clock, ExternalLink, Minimize2, Check, Sparkles, RotateCcw, Calendar } from 'lucide-react'
+import { Play, FileText, Clock, ExternalLink, Minimize2, Check, Sparkles, RotateCcw, Calendar, Copy } from 'lucide-react'
 import type { CardItem } from './CardStack'
 import { openInGoogleCalendar } from '@/lib/calendar'
 import { useStore } from '@/lib/store'
@@ -59,6 +59,21 @@ export default function ExecuteView({ item, onClose, onComplete }: ExecuteViewPr
         return tomorrow.toISOString().slice(0, 16)
     })
     const [duration, setDuration] = useState(item.scheduledDuration || item.estimatedMinutes || 60)
+    const [copied, setCopied] = useState(false)
+
+    const handleCopy = () => {
+        const textToCopy = [
+            `Title: ${item.title}`,
+            `Summary: ${item.summary}`,
+            item.url ? `URL: ${item.url}` : '',
+            notes ? `\nNotes:\n${notes}` : ''
+        ].filter(Boolean).join('\n')
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+        })
+    }
 
     // Timer logic for Task type
     useEffect(() => {
@@ -68,7 +83,9 @@ export default function ExecuteView({ item, onClose, onComplete }: ExecuteViewPr
                 setTimeLeft((prev) => prev - 1)
             }, 1000)
         } else if (timeLeft === 0) {
-            setIsActive(false)
+            setTimeout(() => {
+                setIsActive(false)
+            }, 0)
             // TODO: Play completion sound
         }
         return () => clearInterval(interval)
@@ -94,7 +111,7 @@ export default function ExecuteView({ item, onClose, onComplete }: ExecuteViewPr
 
     const renderContent = () => {
         switch (item.type) {
-            case 'video':
+            case 'video': {
                 const video = extractVideoId(item)
                 return (
                     <div className="w-full aspect-video bg-black rounded-xl overflow-hidden mb-4">
@@ -136,6 +153,7 @@ export default function ExecuteView({ item, onClose, onComplete }: ExecuteViewPr
                         )}
                     </div>
                 )
+            }
 
             case 'article':
                 return (
@@ -261,12 +279,21 @@ export default function ExecuteView({ item, onClose, onComplete }: ExecuteViewPr
                             <p className="text-xs text-gray-500 capitalize">{item.type} • {item.timeEstimate || 'No estimate'}</p>
                         </div>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-white/5 rounded-full transition-colors text-gray-400"
-                    >
-                        <Minimize2 className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleCopy}
+                            className="p-2 hover:bg-white/5 rounded-full transition-colors text-gray-400"
+                            title="Copy to clipboard"
+                        >
+                            {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-white/5 rounded-full transition-colors text-gray-400"
+                        >
+                            <Minimize2 className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Content */}

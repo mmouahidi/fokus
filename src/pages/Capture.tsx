@@ -19,16 +19,18 @@ export default function Capture() {
         const text = searchParams.get('text')
         const url = searchParams.get('url')
 
-        const parts = []
+        const parts: string[] = []
         if (title) parts.push(title)
         if (text) parts.push(text)
         if (url) {
             parts.push(url)
-            setDetectedUrl(url)
+            setTimeout(() => setDetectedUrl(url), 0)
         }
 
         if (parts.length > 0) {
-            setInitialValue(parts.join('\n\n'))
+            setTimeout(() => {
+                setInitialValue(parts.join('\n\n'))
+            }, 0)
         }
     }, [searchParams])
 

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Send, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -21,20 +21,22 @@ export default function CaptureInput({
     const [isSuccess, setIsSuccess] = useState(false)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-    useEffect(() => {
-        if (initialValue) {
-            setValue(initialValue)
-            adjustHeight()
-        }
-    }, [initialValue])
-
-    const adjustHeight = () => {
+    const adjustHeight = useCallback(() => {
         const textarea = textareaRef.current
         if (textarea) {
             textarea.style.height = 'auto'
             textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`
         }
-    }
+    }, [])
+
+    useEffect(() => {
+        if (initialValue) {
+            setTimeout(() => {
+                setValue(initialValue)
+                adjustHeight()
+            }, 0)
+        }
+    }, [initialValue, adjustHeight])
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setValue(e.target.value)

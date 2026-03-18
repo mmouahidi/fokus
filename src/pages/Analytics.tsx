@@ -204,7 +204,7 @@ export default function Analytics() {
     )
 }
 
-function StatCard({ icon: Icon, label, value, color }: { icon: any, label: string, value: string | number, color: string }) {
+function StatCard({ icon: Icon, label, value, color }: { icon: React.ElementType, label: string, value: string | number, color: string }) {
     return (
         <motion.div
             whileHover={{ scale: 1.02 }}
